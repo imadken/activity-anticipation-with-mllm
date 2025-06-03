@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from os import getenv
 
 from neo4j import GraphDatabase, basic_auth
+import time
+
+from gemini_api import get_response_google
 
 load_dotenv()
 client = OpenAI(
@@ -12,7 +15,7 @@ client = OpenAI(
 
 
 class KG:
-    def __init__(self, uri="neo4j+ssc://3ca39d1b.databases.neo4j.io", user="neo4j", password=getenv('NEO4J_PASSWORD')):
+    def __init__(self, uri=getenv("NEO4J_URI"), user="neo4j", password=getenv('NEO4J_PASSWORD')):
         try:
             self.driver = GraphDatabase.driver(uri, auth=(user, password))
             self.driver.verify_connectivity()
@@ -86,7 +89,7 @@ def get_response_openai(prompt, model="deepseek/deepseek-prover-v2:free", MLLM=F
 
 SYSTEM_PROMPT = (
     "You are an expert in building knwowledge graphs.\n"
-    "Given an object, you will return the affordances that can be done with it.\n"
+    "Given an object, you will return the most common and relevant affordances that can be done with it while in hands.\n"
     "Return the answer in the following format separated by commas:\n"
     "affordance1, affordance2, ...\n"
     "Return only the answer, do not include any other text or explanation and keep the answers simple (only one word or verb if possible).\n"
@@ -94,20 +97,49 @@ SYSTEM_PROMPT = (
 
 if __name__ == "__main__":
     kg = KG()
-    objects = ["banana", "spoon", "knife", "fork", "cup", "bottle", "pen", "paper", "book", "phone"]
 
-    for obj in objects:
+    # print(kg.get_all_data())
+    # # print(kg.get_affordances_for_object("pen"))    
+
+    # Uncomment the following lines to add objects and their affordances to the knowledge graph
+    objects = ['backpack', 'handbag', 'tie', 'suitcase', 
+    'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 
+    'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 
+    'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 
+    'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cellPhone', 
+    'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 
+    'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush', 'rhand', 
+    'lhand', 'robot', 'waterBottle', 'pen', 'coca', 'juiceBottle', 'oilBottle', 
+    'detergentBottle', 'honeyBottle', 'teapot', 'dishwashLiquid', 'salade', 
+    'tap', 'coffeeMachine', 'milkBottle', 'saltBottle', 'sponge', 'coffeeBox', 
+    'box', 'plate', 'coffeeCapsule', 'paper']
+
+    
+
+
+
+    # objects = ["banana", "spoon", "knife", "fork", "cup", "bottle", "pen", "paper", "book", "phone"]
+    
+    print(f"Adding objects and their affordances to the knowledge graph... {len(objects)} objects to process.")
+
+    for counter, obj in enumerate(objects, start=1):
+        print(f"Processing object {counter}/{len(objects)}: {obj}")
+        if counter % 20 == 0:
+            print("Pausing for 60 seconds to avoid rate limiting...")
+            time.sleep(60)
+
         if not kg.object_exists(obj):
-            print(f"Adding {obj} to the knowledge graph.")
-            affordances = get_response_openai(f"{SYSTEM_PROMPT} what are the affordances of a {obj}?").replace('\n', '').replace('"', '').replace("```", '').replace("python", '').split(",")
+            # print(f"Adding {obj} to the knowledge graph.")
+            # affordances = get_response_openai(f"{SYSTEM_PROMPT} what are the affordances of a {obj}?").replace('\n', '').replace('"', '').replace("```", '').replace("python", '').split(",")
+            affordances = get_response_google([f"{SYSTEM_PROMPT} what are the affordances of a {obj}?"]).replace('\n', '').replace('"', '').replace("```", '').replace("python", '').split(",")
 
-            print(f"Affordances for {obj}: {affordances}")
+            print(f"Affordances for {obj}: {affordances}\n\n")
             
-            affordances = [a.strip() for a in affordances if a.strip()]
+            affordances = [a.strip().lower() for a in affordances if a.strip()]
 
 
             kg.add_object_with_affordances(obj, affordances)
         else:
-            print(f"{obj} already exists in the knowledge graph.")
+            print(f"{obj} already exists in the knowledge graph.\n\n")
 
     kg.close()

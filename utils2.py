@@ -71,14 +71,14 @@ def detect_objects_yolo(frame, yolo_model):
                 #    if similarity[0]['distance'] > 0.4 or (cls_name.lower() == similarity[0]['label']):
                    if similarity[0]['distance'] > 0.4:
                        label = similarity[0]['label']   
-                       db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
+                    #    db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
                    else:
                        
                         print(f"similarity is low, MLLM call..")
                         label = get_response_google(["what is this object ? return only the answer in one word if possible.",Image.fromarray(org_frame[y1:y2 , x1:x2])]).replace("?", "")
                         print(f"The MLLM response is: {label.lower()}")
 
-                        db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
+                        # db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
                            
                        
                 else: ## similarity empty, vectordb is not filled yet
@@ -86,9 +86,12 @@ def detect_objects_yolo(frame, yolo_model):
                     label = get_response_google(["what is this object ? return only the answer in one word if possible.",Image.fromarray(frame)]).replace("?", "")
                     print(f"The MLLM response is: {label}")
    
-                    db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
+                    # db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
  
-                
+        
+            db.insert_frame(frame=Image.fromarray(org_frame[y1:y2 , x1:x2]), label=label.lower().strip(), id=None)
+
+
             yolo_bboxes[label]=(x1, y1, x2, y2)
             
             # Draw YOLO bounding box (blue)
